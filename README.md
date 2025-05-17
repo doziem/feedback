@@ -56,3 +56,23 @@ A Spring Boot application that allows users to submit feedback and admins to vie
 "rating": 3,
 "createdAt": "2025-05-17T15:45:22.98765"
 }
+]
+
+### Bonus (Optional) 
+### 3. Filter Feedback by Rating (Admin Only)
+
+**Endpoint**: GET /api/admin/feedback/by-rating/{rating}
+
+**Example**: GET /api/admin/feedback/by-rating/5
+
+**Response (200 OK):**
+```json```
+[
+{
+"id": 1,
+"userId": "user123",
+"message": "Great service!",
+"rating": 5,
+"createdAt": "2023-07-25T14:30:45.12345"
+}
+]
