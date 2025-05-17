@@ -8,6 +8,7 @@ import com.doziem.Feedback.repository.FeedbackRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -34,6 +35,23 @@ public class FeedbackServiceImpl implements FeedbackService{
         return mapToResponse(savedFeedback);
     }
 
+    @Override
+    public List<FeedbackResponse> getAllFeedback() {
+        return repository.findAllByOrderByCreatedAtDesc()
+                .stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<FeedbackResponse> getFeedbackByRatingOrDate(Integer rating, LocalDate createdDate) {
+
+        List<Feedback> feedbacks = repository.findByRatingOrCreatedAt(rating, createdDate);
+        return feedbacks.stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
     private FeedbackResponse mapToResponse(Feedback feedback) {
 
         FeedbackResponse response = new FeedbackResponse();
@@ -44,13 +62,5 @@ public class FeedbackServiceImpl implements FeedbackService{
         response.setCreatedAt(feedback.getCreatedAt());
 
         return response;
-    }
-
-    @Override
-    public List<FeedbackResponse> getAllFeedback() {
-        return repository.findAllByOrderByCreatedAtDesc()
-                .stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
     }
 }

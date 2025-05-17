@@ -5,10 +5,11 @@ A Spring Boot application that allows users to submit feedback and admins to vie
 ## Features
 
 - Submit feedback with message and rating (1-5)
-- Admin view of all feedback submissions
+- Admin view of all feedback
 - Filter feedback by rating
-- Secure admin endpoints with role-based auth
-- Automatic timestamping of submissions
+- Automatic timestamping
+- Input validation
+- Role-based security
 
 ## API Documentation
 
