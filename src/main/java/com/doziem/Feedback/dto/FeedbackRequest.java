@@ -7,6 +7,8 @@ import jakarta.validation.constraints.Size;
 import lombok.*;
 
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class FeedbackRequest {
 
     @NotBlank(message = "User ID is required")
@@ -20,4 +22,7 @@ public class FeedbackRequest {
     @Max(value = 5, message = "Rating must be at most 5")
     private int rating;
 
+
+    public FeedbackRequest(int rating, String message, String userId) {
+    }
 }

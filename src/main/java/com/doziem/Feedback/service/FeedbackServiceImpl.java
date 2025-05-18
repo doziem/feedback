@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -21,8 +22,16 @@ public class FeedbackServiceImpl implements FeedbackService{
     @Override
     public FeedbackResponse submitFeedback(FeedbackRequest feedbackRequest) {
 
+        if (feedbackRequest == null) {
+            throw new IllegalArgumentException("Feedback request cannot be null");
+        }
+
         if (feedbackRequest.getRating() < 1 || feedbackRequest.getRating() > 5) {
             throw new InvalidFeedbackException("Rating must be between 1 and 5");
+        }
+
+        if (feedbackRequest.getUserId() == null) {
+            throw new InvalidFeedbackException("User ID cannot be null");
         }
 
         Feedback feedback = Feedback.builder()
@@ -46,21 +55,32 @@ public class FeedbackServiceImpl implements FeedbackService{
     @Override
     public List<FeedbackResponse> getFeedbackByRatingOrDate(Integer rating, LocalDate createdDate) {
 
+        if (rating != null && (rating < 1 || rating > 5)) {
+            throw new InvalidFeedbackException("Rating must be between 1 and 5");
+        }
+
         List<Feedback> feedbacks = repository.findByRatingOrCreatedAt(rating, createdDate);
         return feedbacks.stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
-    private FeedbackResponse mapToResponse(Feedback feedback) {
+ public FeedbackResponse mapToResponse(Feedback feedback) {
 
-        FeedbackResponse response = new FeedbackResponse();
-        response.setId(feedback.getId());
-        response.setUserId(feedback.getUserId());
-        response.setMessage(feedback.getMessage());
-        response.setRating(feedback.getRating());
-        response.setCreatedAt(feedback.getCreatedAt());
+        if (feedback == null) {
+            throw new IllegalArgumentException("Feedback cannot be null");
+        }
 
-        return response;
+     try {
+         return FeedbackResponse.builder()
+                 .id(feedback.getId())
+                 .userId(feedback.getUserId())
+                 .message(feedback.getMessage())
+                 .rating(feedback.getRating())
+                 .createdAt(feedback.getCreatedAt())
+                 .build();
+     } catch (NullPointerException e) {
+         throw new IllegalArgumentException("Invalid feedback data", e);
+     }
     }
 }
