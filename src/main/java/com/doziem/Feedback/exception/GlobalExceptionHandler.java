@@ -1,5 +1,6 @@
 package com.doziem.Feedback.exception;
 import lombok.Getter;
+import lombok.Setter;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -14,7 +15,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestControllerAdvice
-public class GlobalExceptionHandler {
+public class GlobalExceptionHandler extends Throwable {
     // Handle validation exceptions
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidationExceptions(
@@ -49,6 +50,32 @@ public class GlobalExceptionHandler {
                 Map.of("path", request.getDescription(false)));
 
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    // Handle custom business exceptions
+    @ExceptionHandler(MissingFilterException.class)
+    public ResponseEntity<ErrorResponse> handleMissingFilterException(
+            InvalidFeedbackException ex, WebRequest request) {
+        ErrorResponse response = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                ex.getMessage(),
+                Map.of("path", request.getDescription(false)));
+
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    // Handle custom business exceptions
+    @ExceptionHandler(FeedbackNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleFeedbackNotFoundException(
+            InvalidFeedbackException ex, WebRequest request) {
+        ErrorResponse response = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.NOT_FOUND.value(),
+                ex.getMessage(),
+                Map.of("path", request.getDescription(false)));
+
+        return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
     }
 
     // Handle type mismatch exceptions
@@ -86,6 +113,7 @@ public class GlobalExceptionHandler {
 
     // Error response DTO
     @Getter
+    @Setter
     public static class ErrorResponse {
         // Getters
         private final LocalDateTime timestamp;

@@ -2,6 +2,7 @@ package com.doziem.Feedback.service;
 
 import com.doziem.Feedback.dto.FeedbackRequest;
 import com.doziem.Feedback.dto.FeedbackResponse;
+import com.doziem.Feedback.exception.FeedbackNotFoundException;
 import com.doziem.Feedback.exception.InvalidFeedbackException;
 import com.doziem.Feedback.model.Feedback;
 import com.doziem.Feedback.repository.FeedbackRepository;
@@ -63,6 +64,13 @@ public class FeedbackServiceImpl implements FeedbackService{
         return feedbacks.stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public FeedbackResponse getFeedbackById(UUID id) throws FeedbackNotFoundException {
+        Feedback feedback = repository.findById(id)
+                .orElseThrow(() -> new FeedbackNotFoundException("Feedback not found with id: " + id));
+        return mapToResponse(feedback);
     }
 
  public FeedbackResponse mapToResponse(Feedback feedback) {

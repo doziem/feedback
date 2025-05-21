@@ -1,32 +1,30 @@
 package com.doziem.Feedback.controller;
+
+import com.doziem.Feedback.config.SecurityConfig;
 import com.doziem.Feedback.dto.FeedbackRequest;
 import com.doziem.Feedback.dto.FeedbackResponse;
 import com.doziem.Feedback.exception.InvalidFeedbackException;
 import com.doziem.Feedback.service.FeedbackService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.web.context.WebApplicationContext;
 
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(FeedbackController.class)
+@Import({ControllerTestConfig.class, SecurityConfig.class})
 @AutoConfigureMockMvc(addFilters = false)
 public class FeedbackControllerTest {
 
@@ -36,74 +34,69 @@ public class FeedbackControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @Mock
     private FeedbackService feedbackService;
 
-    @InjectMocks
-    private FeedbackController feedbackController;
-
     @BeforeEach
-    void setUp(WebApplicationContext webApplicationContext) {
-        mockMvc = MockMvcBuilders
-                .webAppContextSetup(webApplicationContext)
-                .apply(springSecurity())
-                .build();
+    void setup(@Autowired ApplicationContext context) {
+        // Modern dependency injection
+        feedbackService = context.getBean(FeedbackService.class);
     }
 
-    private final UUID testId = UUID.randomUUID();
-    private final LocalDateTime testTime = LocalDateTime.now();
-    private final FeedbackResponse testResponse = FeedbackResponse.builder()
-            .id(testId)
-            .userId("user123")
-            .message("Great service")
-            .rating(5)
-            .createdAt(testTime)
-            .build();
+    @Test
+    void submitFeedback_ValidRequest_Returns201() throws Exception {
+        UUID testId = UUID.randomUUID();
+        when(feedbackService.submitFeedback(any()))
+                .thenReturn(new FeedbackResponse(testId, "user123", "Great", 5, null));
+
+        mockMvc.perform(post("/api/feedback")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                    {"userId":"user123","message":"Great","rating":5}
+                    """))
+                .andExpectAll(
+                        status().isCreated(),
+                        jsonPath("$.id").value(testId.toString()),
+                        jsonPath("$.rating").value(5)
+                );
+    }
 
     @Test
-    void submitFeedback_ValidInput_ReturnsCreated() throws Exception {
-        FeedbackRequest request = new FeedbackRequest(5, "Great service", "user123");
+    void submitFeedback_NullRequest_Returns400() throws Exception {
+        mockMvc.perform(post("/api/feedback")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("null"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Feedback request cannot be null"));
+    }
+    @Test
+    void submitFeedback_InvalidRating_Returns400() throws Exception {
+        FeedbackRequest request = new FeedbackRequest("user123", "Bad", 0);
 
-        when(feedbackService.submitFeedback(any(FeedbackRequest.class)))
-                .thenReturn(testResponse);
+        when(feedbackService.submitFeedback(any()))
+                .thenThrow(new InvalidFeedbackException("Rating must be between 1 and 5"));
 
         mockMvc.perform(post("/api/feedback")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value(testId.toString()))
-                .andExpect(jsonPath("$.userId").value("user123"))
-                .andExpect(jsonPath("$.rating").value(5));
-
-        verify(feedbackService).submitFeedback(any(FeedbackRequest.class));
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Rating must be between 1 and 5"));
     }
 
     @Test
-    void submitFeedback_InvalidRating_ReturnsBadRequest() throws Exception {
-        FeedbackRequest invalidRequest = new FeedbackRequest(6, "Test", "user123");
+    void submitFeedback_NullUserId_ThrowsException() throws Exception {
+        // Given
+        FeedbackRequest request = new FeedbackRequest(null, "Test feedback", 3);
 
-        when(feedbackService.submitFeedback(any()))
-                .thenThrow(new InvalidFeedbackException("Invalid rating"));
+        when(feedbackService.submitFeedback(any(FeedbackRequest.class)))
+                .thenThrow(new InvalidFeedbackException("User ID cannot be null"));
 
+        // When/Then
         mockMvc.perform(post("/api/feedback")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    void submitFeedback_MissingFields_ReturnsBadRequest() throws Exception {
-        String invalidJson = """
-            {
-                "rating": 0,
-                "message": "",
-                "userId": ""
-            }
-            """;
-
-        mockMvc.perform(post("/api/feedback")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(invalidJson))
-                .andExpect(status().isBadRequest());
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("User ID cannot be null"));
     }
 }
+
+
