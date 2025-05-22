@@ -22,4 +22,4 @@ public class GlobalExceptionHandler {
     }
 }
 
-record ErrorResponse(LocalDateTime timestamp, int status, String message) {}
+ record ErrorResponse(LocalDateTime timestamp, int status, String message) {}

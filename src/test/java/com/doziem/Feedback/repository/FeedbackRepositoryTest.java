@@ -37,13 +37,10 @@ public class FeedbackRepositoryTest {
     @BeforeEach
     void setUp() {
         repository.deleteAllInBatch();
-        // Add any required test data
     }
 
     @Test
     void findAllByOrderByCreatedAtDesc_ReturnsNewestFirst() {
-        // Clear existing data first
-//        repository.deleteAllInBatch();
 
         // Create test data with controlled timestamps
         Feedback older = saveFeedback("user1", "Old", 3,

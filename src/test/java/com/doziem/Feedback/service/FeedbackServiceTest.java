@@ -12,9 +12,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -78,4 +81,51 @@ public class FeedbackServiceTest {
                 .hasMessage("User ID cannot be null");
     }
 
+    @Test
+    public void getAllFeedback_ShouldReturnAllFeedbackOrderedByCreatedAtDesc() {
+        // Arrange
+        LocalDateTime now = LocalDateTime.now();
+        Feedback feedback1 = new Feedback();
+        feedback1.setId(UUID.randomUUID());
+        feedback1.setUserId("user1");
+        feedback1.setMessage("Great service!");
+        feedback1.setRating(5);
+        feedback1.setCreatedAt(now.minusDays(1));
+
+        Feedback feedback2 = new Feedback();
+        feedback2.setId(UUID.randomUUID());
+        feedback2.setUserId("user2");
+        feedback2.setMessage("Could be better");
+        feedback2.setRating(3);
+        feedback2.setCreatedAt(now);
+
+        List<Feedback> mockFeedbackList = List.of(feedback2, feedback1);
+
+        when(repository.findAllByOrderByCreatedAtDesc()).thenReturn(mockFeedbackList);
+
+        // Act
+        List<FeedbackResponse> result = feedbackService.getAllFeedback();
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(2, result.size());
+        assertEquals(feedback2.getId(), result.get(0).getId());
+        assertEquals(feedback1.getId(), result.get(1).getId());
+
+        verify(repository, times(1)).findAllByOrderByCreatedAtDesc();
+    }
+
+    @Test
+    public void getAllFeedback_WhenNoFeedbackExists_ShouldReturnEmptyList() {
+        // Arrange
+        when(repository.findAllByOrderByCreatedAtDesc()).thenReturn(List.of());
+
+        // Act
+        List<FeedbackResponse> result = feedbackService.getAllFeedback();
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+        verify(repository, times(1)).findAllByOrderByCreatedAtDesc();
+    }
 }
